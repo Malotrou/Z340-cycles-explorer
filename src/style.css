@@ -1,0 +1,668 @@
+:root {
+  /* --- DIMENSIONI BOARD (Modifica qui per celle rettangolari) --- */
+  --base-cell-width: 3.5rem;
+  --base-cell-height: 3.5rem;
+
+  /* --- DIMENSIONI SIDEBAR (Fissa, per mantenere pulsanti quadrati) --- */
+  --cell-size: 3.5rem;
+
+  /* Calcoli automatici per lo Zoom della Board */
+  --zoom: 1;
+  --cell-width: calc(var(--base-cell-width) * var(--zoom));
+  --cell-height: calc(var(--base-cell-height) * var(--zoom));
+
+  /* Variabili globali */
+  --gap-size: 0.2rem;
+  font-size: 1vh;
+
+  /* COLORI */
+  --bg-color-main: #807e7e;
+  --bg-color-panel: #ffffff;
+  --bg-color-board: #e1e0e0; 
+  --bg-color-hover: #656363;
+  --bg-color-board-tiles: #ffffff; 
+  --border-color-tiles: #000000; 
+  --border-color: #cccccc;
+  --border-color-dark: #060606;
+  --color-primary: #030a4d;
+  --color-primary-hover: #1a2bc3;
+  --color-selection: #f3e30a;
+  --border-selection: 0.1rem solid #000000; /* dashed */ /* solid */
+  --color-selection-shaded: #f3e30a71;
+   --border-selection-shaded: 0.1rem solid #f3e30a71;
+  --color-text-main: #000000;
+  --color-text-sub: #807b7b;
+
+  /* MARGINI BOARD */
+  --board-btn-margins: 3rem;
+}
+
+/* CARICAMENTO FONT */
+@font-face {
+  font-family: "Z408";
+  src: url("./fonts/Zodiac-Z408.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Z340";
+  src: url("./fonts/Zodiac-Z340.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Largo";
+  src: url("./fonts/Largo.ttf") format("truetype");
+}
+
+/* LAYOUT GENERALE */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  height: 100vh;
+  min-width: 100%;
+  width: 100vh;
+  display: flex;
+  flex-direction: row;
+  padding: 2rem;
+  background-color: var(--bg-color-main);
+  gap: 2rem;
+  box-sizing: border-box;
+}
+
+/* CLASSI UTILITY */
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.full-height {
+  height: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.gap-small {
+  gap: 0.5rem;
+}
+
+.gap-medium {
+  gap: 1rem;
+}
+
+.gap-large {
+  gap: 2rem;
+}
+
+/* SPAZIATURE SPECIFICHE */
+.mb-1rem {
+  margin-bottom: 1rem;
+}
+
+.mb-2rem {
+  margin-bottom: 2rem;
+}
+
+.mb-3rem {
+  margin-bottom: 3rem;
+}
+
+.mb-4rem {
+  margin-bottom: 4rem;
+}
+
+.mb-5rem {
+  margin-bottom: 5rem;
+}
+
+.mt-35rem {
+  margin-top: 35rem;
+}
+
+/* SIDEBAR BASE - Logica proporzionale */
+
+.sidebar-section {
+  /* flex-grow: 1, flex-shrink: 1, flex-basis: 0 */
+  flex: 1; 
+  padding: 2rem;
+  border-radius: 0.8rem;
+  background-color: var(--bg-color-panel);
+  display: flex;
+  flex-direction: column;
+  /* Animiamo il flex-grow per un effetto fluido */
+  transition: flex 0.3s ease, min-width 0.3s ease;  
+  /* Impediamo che diventi troppo stretta prima di collassare */
+  min-width: 0; 
+}
+
+/* SIDEBAR COLLASSATA */
+.sidebar-section.collapsed {
+  /* flex-grow: 0 (non crescere), flex-shrink: 0, basis: fissa */
+  /* Usiamo una misura fissa in rem (es. 5rem) invece di % per evitare che 
+     scompaia su schermi piccoli o diventi enorme su schermi grandi */
+  flex: 0 0 5rem; 
+  align-items: center;
+  padding: 2rem 0.5rem; /* Riduciamo il padding laterale quando chiusa */
+  min-width: 0;
+  overflow: hidden; /* Nasconde il contenuto che sfora */
+}
+
+/* ELEMENTI UI (Sidebar SX) */
+.sidebar-title {
+  font-size: 2.6rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.toggle-btn {
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+  user-select: none;
+  transition: opacity 0.2s ease;
+  padding: 0.2rem 0.6rem;
+  background: none;
+  border: none;
+}
+
+.toggle-btn:hover {
+  background-color: var(--bg-color-hover);
+  opacity: 0.6;
+  border-radius: 0.4rem;
+}
+
+.reopen-btn {
+  margin-top: 1rem;
+}
+
+.collapsed-label {
+  writing-mode: vertical-lr;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.collapsed-label.sx {
+  transform: rotate(180deg);
+}
+
+.collapsed-label.dx {
+  writing-mode: vertical-rl;
+}
+
+.label-bold {
+  font-weight: bold;
+  font-size: 1.6rem;
+  display: block;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2rem;
+  font-size: 1.4rem;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+/* INPUT & CONTROLLI */
+.text-area-input {
+  width: 100%;
+  height: 25rem;
+  border: 0.1rem solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 0.4rem;
+  resize: vertical;
+  box-sizing: border-box;
+  color: #919090; /* GRIGIO AGGIORNATO */
+  font-family: inherit;
+  font-size: 1.4rem;
+}
+
+.dropdown-select {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 0.1rem solid var(--border-color);
+  font-size: 1.4rem;
+  width: 30%;
+}
+
+.action-button {
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 1.6rem;
+  padding: 0.8rem 1.6rem;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
+
+  /* --- FIX DIMENSIONI COSTANTI --- */
+  /* Impostiamo un'altezza fissa sufficiente per 2 righe di testo */
+  /* 5rem dovrebbe essere una buona misura basata sul tuo font-size */
+  height: 5rem; 
+
+  /* Usiamo flex per centrare il testo (sia che sia su 1 riga o su 2) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.1; /* Stringe leggermente lo spazio tra NEW e TILES */
+  /* ------------------------------- */
+}
+
+.action-button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* RIGHT SIDEBAR TOOLS */
+.key-list-container {
+  flex: 0 0 73%;
+  border: 0.1rem solid #000000;
+  border-radius: 0.4rem;
+  padding: 0.9rem;
+  overflow-y: auto;
+  background-color: var(--bg-color-board);
+}
+
+.tools-container {
+  flex: 1;
+  height: 100%;
+  padding: 0.5rem;
+  border-left: 0.1rem solid #eeeeee;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.2rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  align-content: start;
+  border: 0.1rem solid #dddddd;
+  padding: 0.1rem;
+  border-radius: 0.4rem;
+}
+
+.color-swatch {
+  width: 100%;
+  aspect-ratio: 1/1;
+  cursor: pointer;
+  border: 0.1rem solid #999999;
+  border-radius: 0.2rem;
+}
+
+.drop-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background-color: #7a0808;
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-size: 1.4rem;
+  box-shadow: 0 0.2rem 0.4rem rgba(0,0,0,0.2);
+
+    /* --- FIX DIMENSIONI COSTANTI --- */
+  /* Impostiamo un'altezza fissa sufficiente per 2 righe di testo */
+  /* 5rem dovrebbe essere una buona misura basata sul tuo font-size */
+  height: 5rem; 
+
+  /* Usiamo flex per centrare il testo (sia che sia su 1 riga o su 2) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.1; /* Stringe leggermente lo spazio tra NEW e TILES */
+}
+
+.drop-btn:hover {
+  background-color: #eb0b0b;
+}
+
+.tooltip-container {
+  position: absolute;
+  bottom: 110%;
+  right: 0;
+  background-color: #333333;
+  color: #ffffff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  font-size: 1.6rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 0.2rem 0.8rem rgba(0,0,0,0.3);
+}
+
+.tooltip-arrow {
+  position: absolute;
+  top: 100%;
+  right: 2rem;
+  border-width: 0.5rem;
+  border-style: solid;
+  border-color: #333333 transparent transparent transparent;
+}
+
+/* CENTER SECTION */
+.center-section {
+  /* flex-grow: 3 -> Occupa il triplo dello spazio di una sidebar aperta */
+  flex: 3;
+  /* Il resto delle proprietà rimane uguale */
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color-panel);
+  padding: 2rem;
+  border-radius: 0.8rem;
+  align-items: center;
+  justify-content: flex-start;
+  /* Aggiungiamo transizione anche qui per fluidità */
+  transition: flex 0.3s ease;
+}
+
+.quote-image {
+  width: 100%;
+  height: 5rem;
+  object-fit: contain;
+  margin-bottom: 1.6rem;
+}
+
+/* BOARD */
+.board-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.board {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color-board);
+  display: grid;
+  /* Aggiungi questa riga fondamentale */
+  position: relative; 
+  grid-template-columns: repeat(auto-fill, var(--cell-width));
+  grid-template-rows: repeat(auto-fill, var(--cell-height));
+  grid-auto-columns: var(--cell-width);
+  grid-auto-rows: var(--cell-height);
+  gap: var(--gap-size);
+  overflow: auto;
+  align-content: start;
+  border: 0.1rem solid var(--border-color-dark);
+  padding: 1.2rem;
+  box-sizing: border-box;
+  overflow-anchor: none; 
+  scroll-behavior: auto !important; 
+}
+
+.tile {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color-board-tiles);
+  border: 0.1rem solid var(--border-color-tiles);
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Font size calcolato sulla larghezza */
+  font-size: calc(var(--cell-height) * 0.6);
+  font-weight: normal;
+  color:#000;
+  user-select: none;
+  cursor: grab;
+  z-index: 10;
+  /* Il tile deve avere posizione relativa per ospitare l'overlay */
+  position: relative;
+  transition: box-shadow 0.2s;
+    /* Crea un "contenitore di livelli" isolato per questo tile */
+  isolation: isolate; 
+}
+
+/* Tile senza shade custom -> Colore pieno, usiamo !important per sovrascrivere il background-color inline di default */
+.tile.selected:not(.has-custom-bg) {
+  background-color: var(--color-selection) !important; 
+  border: var(--border-selection);
+}
+
+/* Rimuoviamo il velo per il caso giallo pieno (non serve) */
+.tile.selected:not(.has-custom-bg)::after {
+  display: none;
+}
+
+/* Tile con shade custom -> manteniamo il background originale e aggiungiamo sopra un "velo" di selezione semi-trasparente tramite uno pseudo-elemento  */
+.tile.selected.has-custom-bg::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color:var(--color-selection-shaded);
+  border: var(--border-selection-shaded);  
+  box-sizing: border-box;
+  pointer-events: none; /* Importante: non deve bloccare i click */
+  border-radius: 0.4rem;
+  z-index: -1; /* Grazie a 'isolation: isolate' SUL PADRE (.tile), -1 mette il velo DIETRO al testo ma DAVANTI allo sfondo */
+}
+
+/* ZOOM & INTERAZIONE */
+.zoom-controls {
+  position: absolute;
+  bottom: var(--board-btn-margins);
+  right: var(--board-btn-margins);
+  background-color:#f0f0f0;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 0.1rem solid #cccccc;
+  box-shadow: 0 0.2rem 1rem rgba(0,0,0,0.2);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 9999;
+  align-items: center;
+}
+
+.zoom-btn {
+  width: 3rem;
+  height: 2rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border: 0.1rem solid #999;
+  background-color: #f0f0f0;
+  border-radius: 0.2rem;
+}
+
+.zoom-btn:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.selection-box {
+  position: absolute;
+  border: 0.1rem dashed #0078d7;
+  background-color: rgba(0, 120, 215, 0.2);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.drop-preview-cell {
+  border-radius: 0.4rem;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* CONTROLLI UNDO / REDO */
+.undo-redo-controls {
+  position: absolute;
+  top: calc(var(--board-btn-margins)/2);
+  left: calc(var(--board-btn-margins)/2);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 9999;
+}
+
+.undo-redo-btn {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color: #f0f0f0; 
+  border: 0.1rem solid #cccccc;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, opacity 0.2s;
+  box-shadow: 0 0.2rem 1rem rgba(0,0,0,0.2);
+  padding: 0; /* Importante per centrare svg */
+}
+
+.undo-redo-btn:hover:not(:disabled) {
+  background-color: #ffffff;
+}
+
+.undo-redo-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.undo-redo-btn svg {
+  width: 60%;
+  height: 60%;
+  fill: #333;
+}
+
+/* CONTROLLI FILE (Top Right) */
+
+.file-controls {
+  position: absolute;
+  top: calc(var(--board-btn-margins)/3);
+  right: var(--board-btn-margins);
+  display: flex;
+  flex-direction: column; /* Incolonnati */
+  gap: 0.5rem;
+  z-index: 9999;
+}
+
+.file-btn {
+  width: 10rem; /* Rettangolari */
+  padding: 0.4rem 0;
+  background-color: #f0f0f0; 
+  border: 0.1rem solid #cccccc;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #333333a4;
+  text-align: center;
+  transition: background-color 0.2s, opacity 0.2s;
+  box-shadow: 0 0.2rem 1rem rgba(0,0,0,0.2);
+}
+
+.file-btn:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+
+/* TEMI ALTERNATIVI */
+
+/* Tema 2: vintage/pergamena */
+.board.theme-alt, 
+.key-list-container.theme-alt {
+  --bg-color-board: #F7E6C8;        /* Sfondo "monarch" rosa/beige */
+  --bg-color-board-tiles: #ffffff00; /* Tiles trasparenti */
+  --border-color-tiles: #00000000;   /* Bordi trasparenti */
+  --base-cell-width: 2.5rem;
+  background-color: var(--bg-color-board); /* Applica alla sidebar */
+}
+
+/* Tema 3: plain white */
+.board.theme-third {
+  --bg-color-board: #ffffff;         /* Plain white */
+  --bg-color-board-tiles: #ffffff00; /* Tiles trasparenti */
+  --border-color-tiles: #00000000;   /* Bordi trasparenti */
+  --base-cell-width: 2.5rem;
+  background-color: var(--bg-color-board);
+}
+
+.key-list-container.theme-third {
+  --bg-color-board: #ffffff;         /* Plain white */
+}
+
+/* --- bottone controllo tema --- */
+.theme-controls {
+  position: absolute;
+  bottom: 3rem;
+  left: 1rem;
+  z-index: 9999;
+}
+
+.theme-btn {
+  width: 3.5rem;
+  height: 3.5rem;
+  background-color:  #f0f0f0;
+  border: 0.1rem solid #cccccc;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0.2rem 1rem rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+}
+
+.theme-btn:hover {
+  background-color: rgba(255, 255, 255, 0.9); 
+}
+
+.theme-btn svg {
+  width: 60%;
+  height: 60%;
+  fill: #333;
+}
+
+
+
