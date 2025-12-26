@@ -1,8 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
 import { GridCell } from "../App";
-import { getCssVarRemFrom, getRemValueInPx } from "../utils/ghostImage";
 import { Tile } from "../types";
 import { handleUpload } from "../utils/fileHandlers";
+
+// ─── UTILITY MATEMATICHE (Copia da ghostImage.ts) ───
+const getCssVarRemFrom = (el: Element | null, name: string, fallback = "0") => {
+  try {
+    const styleTarget = el ? getComputedStyle(el) : getComputedStyle(document.documentElement);
+    const val = styleTarget.getPropertyValue(name) || fallback;
+    return parseFloat(val.trim()) || 0;
+  } catch {
+    return parseFloat(fallback) || 0;
+  }
+};
+
+const getRemValueInPx = () => {
+  if (typeof window === "undefined") return 16;
+  return parseFloat(getComputedStyle(document.documentElement).fontSize);
+};
+// ────────────────────────────────────────────────────
 
 type BoardProps = {
   boardRef: React.RefObject<HTMLDivElement | null>;

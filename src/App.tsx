@@ -3,7 +3,7 @@ import "./style.css";
 import { Tile } from "./types";
 import Z340Untransposed from "./texts/Z340untransposed";
 import useHistory from "./utils/useHistory";
-import { handleSnag, handleSave, handleUpload,} from "./utils/fileHandlers";
+import { handleSnag, handleSave, handleUpload } from "./utils/fileHandlers";
 
 // Import Componenti
 import LeftSidebar from "./components/LeftSidebar";
@@ -35,8 +35,7 @@ export default function App() {
   const [numCols, setNumCols] = useState(17);
   const [numRows, setNumRows] = useState(9);
   
-  // ─── STATO TESTO E STILI CON HISTORY (Fix Undo/Redo) ───
-  // useHistory sostituisce useState per richText
+  // ─── STATO TESTO E STILI CON HISTORY ───
   const { 
     state: richText, 
     setState: setRichText, 
@@ -48,7 +47,6 @@ export default function App() {
   } = useHistory<RichChar[]>([], 50);
 
   const [inputText, setInputText] = useState("");
-  // Nuovo stato per la repository di testo
   const [repoText, setRepoText] = useState("");
 
   // ─── STATI MODALITÀ ───
@@ -67,13 +65,12 @@ export default function App() {
     const clean = raw.replace(/[\n\r]+/g, "");
     const initialRich: RichChar[] = clean.split("").map(c => ({ char: c }));
     
-    // Inizializza history
     resetHistory(initialRich);
     setInputText(clean);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── GESTIONE RESET (Fix Reset Button) ───
+  // ─── GESTIONE RESET ───
   const handleReset = () => {
     const raw = Z340Untransposed || "";
     const clean = raw.replace(/[\n\r]+/g, "");
@@ -90,8 +87,7 @@ export default function App() {
     setZoomLevel(1.0);
   };
 
-  // ─── GESTIONE FILE (Save, Upload, Snag) ───
-  // Adattatore per convertire GridCells in Tiles per le funzioni di utilità vecchie
+  // ─── GESTIONE FILE ───
   const getTilesForExport = () => {
     return gridCells.map(c => ({
       id: c.id,
@@ -99,7 +95,7 @@ export default function App() {
       col: c.col,
       row: c.row,
       color: c.styleColor,
-      backgroundColor: c.styleBg || c.baseColor // Esporta il colore visibile (Base o Shade)
+      backgroundColor: c.styleBg || c.baseColor
     }));
   };
 
@@ -107,17 +103,6 @@ export default function App() {
   const onSnag = () => handleSnag(boardRef.current, getTilesForExport(), "Z340");
   
   const onUploadLoaded = (loadedTiles: Tile[], _loadedFont: string) => {
-    // Quando carichiamo un JSON, dobbiamo ricostruire il richText
-    // Questa è una logica semplificata: assumiamo che l'upload sia un salvataggio di questa app
-    // e proviamo a estrarre i caratteri in ordine.
-    // Nota: L'upload su Z340 Explorer è complesso perché la struttura è rigida.
-    // Per ora carichiamo solo i caratteri e gli stili nel flusso lineare.
-    
-    // Ordiniamo per ID (che in questa app corrisponde all'ordine visuale/logico a seconda del mode)
-    // Ma per ricostruire il testo serve l'ordine originale.
-    // Dato che il JSON standard non salva 'originalIndex', l'upload potrebbe essere impreciso
-    // sui testi complessi. Facciamo un best effort basato sull'ordine array.
-    
     const newRich: RichChar[] = loadedTiles.map(t => ({
       char: t.char,
       color: t.color,
@@ -127,7 +112,6 @@ export default function App() {
     resetHistory(newRich);
     setInputText(newRich.map(r => r.char).join(""));
   };
-
 
   // ─── GESTIONE INPUT TEXTAREA ───
   const handleTextChange = (rawText: string) => {
@@ -307,30 +291,19 @@ export default function App() {
     };
   }
 
-  // ─── UTILS UI ───
-  const handleTileClick = (textIndex: number | null, ctrlKey: boolean) => {
+  // ─── UTILS UI (MODIFICATO: Selezione Additiva) ───
+  const handleTileClick = (textIndex: number | null, _ctrlKey: boolean) => {
     if (textIndex === null) {
-      if (!ctrlKey) setSelectedIndices([]);
+      // Nota: lo svuotamento della selezione cliccando sul vuoto 
+      // è gestito separatamente da handleEmptyClick in Board.tsx
       return;
     }
     
-    // Logica: click successivi aggiungono alla selezione (toggle)
-    // Se preferisci il comportamento standard (click = nuovo, ctrl+click = aggiungi), 
-    // usa la logica commentata sotto.
-    
-    // Logica Standard (Richiesta dall'utente: "selezionare più tiles con click successivi")
-    // Interpreto come: Cliccare su un tile non deseleziona gli altri se premo CTRL, 
-    // oppure comportamento additivo di default? 
-    // Per sicurezza mantengo lo standard CTRL+Click, ma mi assicuro che funzioni.
-    
-    if (ctrlKey) {
-      setSelectedIndices(prev => 
-        prev.includes(textIndex) ? prev.filter(i => i !== textIndex) : [...prev, textIndex]
-      );
-    } else {
-      // Comportamento standard: click singolo seleziona SOLO quello
-      setSelectedIndices([textIndex]);
-    }
+    // MODIFICA: Comportamento sempre additivo (Toggle)
+    // Non controlliamo più ctrlKey. Ogni click aggiunge o rimuove.
+    setSelectedIndices(prev => 
+      prev.includes(textIndex) ? prev.filter(i => i !== textIndex) : [...prev, textIndex]
+    );
   };
 
   const handleRectSelection = (indices: number[], isAdditive: boolean) => {
@@ -375,7 +348,6 @@ export default function App() {
           setCurrentTheme={setCurrentTheme}
           totalVisualCols={exploreMode === 'untranspose' ? numRows : numCols}
           setActiveSidebarKeys={setActiveSidebarKeys}
-          // Nuove props per bottoni board
           onUndo={undo}
           onRedo={redo}
           canUndo={canUndo}
