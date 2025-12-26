@@ -32,9 +32,9 @@ export default function LeftSidebar({
         <h1 className="sidebar-title mb-3rem">Input area</h1>
         <div style={{ height: "0.1rem", backgroundColor: "#9e9c9cb0", flexShrink: 0, marginBottom: "3rem"}}></div>
 
-        {/* Dropdowns */}
-        <div className="flex-row gap-medium mb-2rem full-width">
-            <div className="flex-column flex-1">
+        {/* Dropdowns Colonne/Righe - CENTRATI */}
+        <div className="flex-row gap-medium mb-2rem full-width" style={{ justifyContent: "center" }}>
+            <div className="flex-column" style={{ width: "45%", alignItems: "center" }}>
                 <label className="label-bold mb-1rem" style={{fontSize: "1.2rem"}}>No. of columns</label>
                 <select 
                     className="dropdown-select full-width"
@@ -44,7 +44,7 @@ export default function LeftSidebar({
                     {colOptions.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
             </div>
-            <div className="flex-column flex-1">
+            <div className="flex-column" style={{ width: "45%", alignItems: "center" }}>
                 <label className="label-bold mb-1rem" style={{fontSize: "1.2rem"}}>No. of rows</label>
                 <select 
                     className="dropdown-select full-width"
@@ -56,9 +56,9 @@ export default function LeftSidebar({
             </div>
         </div>
 
-        {/* Canvas Textarea */}
+        {/* Canvas Textarea - TITOLO CENTRATO */}
         <div className="flex-column flex-1 mb-2rem" style={{ minHeight: 0, width: "100%", alignItems: "center" }}>
-             <label className="label-bold mb-1rem" style={{ alignSelf: "flex-start" }}>Canvas</label>
+             <label className="label-bold mb-1rem" style={{ textAlign: "center", width: "100%" }}>Canvas</label>
              <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -66,18 +66,14 @@ export default function LeftSidebar({
                 cols={numCols}
                 style={{
                     fontFamily: "Z340",
-                    fontSize: "2rem", // Font più grande
-                    height: "100%",   // Occupa tutta l'altezza disponibile
-                    resize: "none",   // Disabilita resize manuale
-                    
-                    // Logica Wrapping
-                    width: "auto",    // Lascia che 'cols' definisca la larghezza
-                    maxWidth: "100%", // Ma non sbordare
+                    fontSize: "2rem", 
+                    height: "100%",   
+                    resize: "none",   
+                    width: "auto",    
+                    maxWidth: "100%", 
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-all",
                     overflowWrap: "anywhere",
-                    
-                    // Centratura testo ottica
                     lineHeight: "1.2",
                     letterSpacing: "0.1rem",
                     textAlign: "left"
@@ -85,19 +81,8 @@ export default function LeftSidebar({
              />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - INVERTITI E RINOMINATI */}
         <div className="flex-column gap-medium mt-auto full-width">
-            <button 
-                className="action-button"
-                onClick={() => setExploreMode('untranspose')}
-                style={{
-                    backgroundColor: exploreMode === 'untranspose' ? "#ccc" : "var(--color-primary)",
-                    cursor: exploreMode === 'untranspose' ? "default" : "pointer",
-                    border: exploreMode === 'untranspose' ? "0.2rem solid #000" : "none"
-                }}
-            >
-                UNTRANSPOSE
-            </button>
             <button 
                 className="action-button"
                 onClick={() => setExploreMode('transpose')}
@@ -107,7 +92,19 @@ export default function LeftSidebar({
                      border: exploreMode === 'transpose' ? "0.2rem solid #000" : "none"
                 }}
             >
-                TRANSPOSE
+                GENERATE TRANSPOSED
+            </button>
+
+            <button 
+                className="action-button"
+                onClick={() => setExploreMode('untranspose')}
+                style={{
+                    backgroundColor: exploreMode === 'untranspose' ? "#ccc" : "var(--color-primary)",
+                    cursor: exploreMode === 'untranspose' ? "default" : "pointer",
+                    border: exploreMode === 'untranspose' ? "0.2rem solid #000" : "none"
+                }}
+            >
+                GENERATE UNTRANSPOSED
             </button>
         </div>
 
