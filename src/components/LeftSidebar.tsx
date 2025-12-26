@@ -1,5 +1,3 @@
-import React from "react";
-
 type LeftSidebarProps = {
   inputText: string;
   setInputText: (val: string) => void;
@@ -9,6 +7,9 @@ type LeftSidebarProps = {
   setNumRows: (val: number) => void;
   exploreMode: 'untranspose' | 'transpose' | null;
   setExploreMode: (val: 'untranspose' | 'transpose') => void;
+  repoText: string;
+  setRepoText: (val: string) => void;
+  onReset: () => void;
 };
 
 export default function LeftSidebar({
@@ -19,7 +20,10 @@ export default function LeftSidebar({
   numRows,
   setNumRows,
   exploreMode,
-  setExploreMode
+  setExploreMode,
+  repoText,
+  setRepoText,
+  onReset
 }: LeftSidebarProps) {
   
   const colOptions = Array.from({ length: 8 }, (_, i) => 13 + i); 
@@ -29,25 +33,54 @@ export default function LeftSidebar({
     <div className="sidebar-section">
       <div className="flex-column full-height">
         
-        <h1 className="sidebar-title mb-3rem">Input area</h1>
-        <div style={{ height: "0.1rem", backgroundColor: "#9e9c9cb0", flexShrink: 0, marginBottom: "3rem"}}></div>
+        <h1 className="sidebar-title">Input area</h1>
+        <div style={{ height: "0.1rem", backgroundColor: "#9e9c9cb0", flexShrink: 0, marginTop: "3rem", marginBottom: "3rem"}}></div>
 
-        {/* Dropdowns Colonne/Righe - CENTRATI */}
-        <div className="flex-row gap-medium mb-2rem full-width" style={{ justifyContent: "center" }}>
-            <div className="flex-column" style={{ width: "45%", alignItems: "center" }}>
-                <label className="label-bold mb-1rem" style={{fontSize: "1.2rem"}}>No. of columns</label>
+        {/* 1. Canvas Textarea */}
+        <div className="flex-column flex-1 mb-2rem" style={{ minHeight: "20rem", width: "100%" }}>
+             <label className="label-bold mb-1rem" style={{ alignSelf: "flex-start", paddingLeft: "0.5rem" }}>Canvas</label>
+             <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                className="text-area-input"
+                style={{  
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all"
+                }}
+             />
+        </div>
+
+        {/* 2. Repository Textarea */}
+        <div className="flex-column flex-2 mb-2rem" style={{ minHeight: "15rem", width: "100%" }}>
+             <label className="label-bold mb-1rem" style={{ alignSelf: "flex-start", paddingLeft: "0.5rem" }}>Text portions repository:</label>
+             <textarea
+                value={repoText}
+                onChange={(e) => setRepoText(e.target.value)}
+                className="text-area-input"
+                //placeholder="Park your text snippets here..."
+                style={{  
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all",
+                }}
+             />
+        </div>
+
+        {/* Dropdowns */}
+        <div className="flex-row gap-medium mb-3rem full-width" style={{ justifyContent: "center" }}>
+            <div className="flex-column" style={{ width: "50%", alignItems: "left" }}>
+                <label className="label-bold mb-1rem" style={{fontSize: "1.5rem"}}>No. of columns</label>
                 <select 
-                    className="dropdown-select full-width"
+                    className="dropdown-select"
                     value={numCols}
                     onChange={(e) => setNumCols(Number(e.target.value))}
                 >
                     {colOptions.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
             </div>
-            <div className="flex-column" style={{ width: "45%", alignItems: "center" }}>
-                <label className="label-bold mb-1rem" style={{fontSize: "1.2rem"}}>No. of rows</label>
+            <div className="flex-column" style={{ width: "50%", alignItems: "left" }}>
+                <label className="label-bold mb-1rem" style={{fontSize: "1.5rem"}}>No. of rows</label>
                 <select 
-                    className="dropdown-select full-width"
+                    className="dropdown-select"
                     value={numRows}
                     onChange={(e) => setNumRows(Number(e.target.value))}
                 >
@@ -56,41 +89,22 @@ export default function LeftSidebar({
             </div>
         </div>
 
-        {/* Canvas Textarea - TITOLO CENTRATO */}
-        <div className="flex-column flex-1 mb-2rem" style={{ minHeight: 0, width: "100%", alignItems: "center" }}>
-             <label className="label-bold mb-1rem" style={{ textAlign: "center", width: "100%" }}>Canvas</label>
-             <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                className="text-area-input"
-                cols={numCols}
-                style={{
-                    fontFamily: "Z340",
-                    fontSize: "2rem", 
-                    height: "100%",   
-                    resize: "none",   
-                    width: "auto",    
-                    maxWidth: "100%", 
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all",
-                    overflowWrap: "anywhere",
-                    lineHeight: "1.2",
-                    letterSpacing: "0.1rem",
-                    textAlign: "left"
-                }}
-             />
+
+        {/* 3. Reset Button */}
+         <div className="mb-1rem full-width">
+            <button 
+                className="reset-button"
+                onClick={onReset}
+            >
+                RESET APP
+            </button>
         </div>
 
-        {/* Action Buttons - INVERTITI E RINOMINATI */}
+        {/* Action Buttons */}
         <div className="flex-column gap-medium mt-auto full-width">
             <button 
                 className="action-button"
                 onClick={() => setExploreMode('transpose')}
-                style={{
-                    backgroundColor: exploreMode === 'transpose' ? "#ccc" : "var(--color-primary)",
-                    cursor: exploreMode === 'transpose' ? "default" : "pointer",
-                     border: exploreMode === 'transpose' ? "0.2rem solid #000" : "none"
-                }}
             >
                 GENERATE TRANSPOSED
             </button>
@@ -98,11 +112,6 @@ export default function LeftSidebar({
             <button 
                 className="action-button"
                 onClick={() => setExploreMode('untranspose')}
-                style={{
-                    backgroundColor: exploreMode === 'untranspose' ? "#ccc" : "var(--color-primary)",
-                    cursor: exploreMode === 'untranspose' ? "default" : "pointer",
-                    border: exploreMode === 'untranspose' ? "0.2rem solid #000" : "none"
-                }}
             >
                 GENERATE UNTRANSPOSED
             </button>

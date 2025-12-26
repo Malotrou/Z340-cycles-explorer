@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { GridCell } from "../App";
 import { getCssVarRemFrom, getRemValueInPx } from "../utils/ghostImage";
+import { Tile } from "../types";
+import { handleUpload } from "../utils/fileHandlers";
 
 type BoardProps = {
   boardRef: React.RefObject<HTMLDivElement | null>;
@@ -14,6 +16,15 @@ type BoardProps = {
   setCurrentTheme: React.Dispatch<React.SetStateAction<'default' | 'alt' | 'third'>>;
   totalVisualCols: number;
   setActiveSidebarKeys: React.Dispatch<React.SetStateAction<string[]>>;
+  
+  // Props Bottoni
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onSnag: () => void;
+  onSave: () => void;
+  onUploadLoaded: (tiles: Tile[], font: string) => void;
 };
 
 export default function Board({
@@ -27,13 +38,21 @@ export default function Board({
   currentTheme,
   setCurrentTheme,
   totalVisualCols,
-  setActiveSidebarKeys
+  setActiveSidebarKeys,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+  onSnag,
+  onSave,
+  onUploadLoaded
 }: BoardProps) {
 
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionBox, setSelectionBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const selectionStartPos = useRef<{ x: number; y: number } | null>(null);
   const dragHasMoved = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper metriche
   const getLiveMetrics = () => {
@@ -57,7 +76,7 @@ export default function Board({
   };
 
   const handleMouseDownOnBoard = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest(".zoom-controls, .theme-controls, .tile")) return;
+    if ((e.target as HTMLElement).closest(".zoom-controls, .theme-controls, .undo-redo-controls, .file-controls, .tile")) return;
     if (e.button !== 0) return;
 
     setIsSelecting(true);
@@ -89,28 +108,19 @@ export default function Board({
       const height = Math.abs(currentY - selectionStartPos.current.y);
       setSelectionBox({ x, y, width, height });
 
-      // Calcolo collisioni migliorato (Fix Offset Centratura)
       const { cellWPx, cellHPx, gapPx, paddingPx } = getLiveMetrics();
       const newSelectedIndices: number[] = [];
 
-      // 1. Calcoliamo la larghezza reale totale della griglia
       const totalGridWidth = totalVisualCols * (cellWPx + gapPx) - gapPx;
-      
-      // 2. Calcoliamo lo spazio disponibile nel contenitore (tolto il padding)
       const availableWidth = board.clientWidth - (paddingPx * 2);
-      
-      // 3. Calcoliamo l'offset di centratura (perché justify-content: center)
-      // Se la griglia è più piccola della vista, è centrata -> c'è un offset sinistro extra.
-      // Se è più grande, è allineata a sinistra (scrollable) -> offset è 0.
       let centeringOffset = 0;
       if (totalGridWidth < availableWidth) {
         centeringOffset = (availableWidth - totalGridWidth) / 2;
       }
 
       gridCells.forEach((cell) => {
-        // TileLeft = Padding + Centratura + (Colonna-1)*Dimensione
         const tileLeft = paddingPx + centeringOffset + (cell.col - 1) * (cellWPx + gapPx);
-        const tileTop = paddingPx + (cell.row - 1) * (cellHPx + gapPx); // Verticalmente non c'è centratura dinamica (align-content: start)
+        const tileTop = paddingPx + (cell.row - 1) * (cellHPx + gapPx);
         
         if (
           x < tileLeft + cellWPx &&
@@ -160,6 +170,26 @@ export default function Board({
 
   return (
     <div className="board-container">
+      
+      {/* Undo/Redo Controls */}
+      <div className="undo-redo-controls">
+        <button className="undo-redo-btn" onClick={onUndo} disabled={!canUndo} title="Undo">
+          <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+        </button>
+        <button className="undo-redo-btn" onClick={onRedo} disabled={!canRedo} title="Redo">
+          <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 9 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+        </button>
+      </div>
+
+      {/* File Controls */}
+      <div className="file-controls">
+        <button className="file-btn" onClick={onSnag}>SNAPSHOT 📸</button> 
+        <button className="file-btn" onClick={onSave}>SAVE ⭳</button>
+        <button className="file-btn" onClick={() => fileInputRef.current?.click()}>UPLOAD ⭱</button>
+        <input type="file" ref={fileInputRef} style={{ display: "none" }} accept=".json" onChange={(e) => handleUpload(e, onUploadLoaded)} />
+      </div>
+
+      {/* Theme Button */}
       <div className="theme-controls">
         <button className="theme-btn" onClick={cycleTheme} title="Change theme">
           <img src="/zodiac_symbol.svg" alt="Theme" className="theme-btn-icon" />
@@ -184,7 +214,7 @@ export default function Board({
           gridTemplateRows: `repeat(${maxRow}, var(--cell-height))`,
           gap: "var(--gap-size)",
           alignContent: "start",
-          justifyContent: "center", // Questo causava il disallineamento
+          justifyContent: "center", 
           position: "relative" 
         }}
       >

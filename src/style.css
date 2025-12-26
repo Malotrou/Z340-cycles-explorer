@@ -223,7 +223,7 @@ body {
 
 .label-bold {
   font-weight: bold;
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   display: block;
 }
 
@@ -245,15 +245,15 @@ body {
 /* INPUT & CONTROLLI */
 .text-area-input {
   width: 100%;
-  height: 25rem;
-  border: 0.1rem solid var(--border-color);
+  height: 100%;
+  border: 0.1rem solid var(--border-color-dark);
   padding: 1.5rem;
   border-radius: 0.4rem;
-  resize: vertical;
+  resize: none;
   box-sizing: border-box;
   color: #919090; /* GRIGIO AGGIORNATO */
-  font-family: inherit;
-  font-size: 1.4rem;
+  font-family: "Z340";
+  font-size: 2.3rem;
 }
 
 .dropdown-select {
@@ -261,10 +261,24 @@ body {
   border-radius: 0.4rem;
   border: 0.1rem solid var(--border-color);
   font-size: 1.4rem;
-  width: 30%;
+  width: 50%;
+}
+
+.reset-button {
+  height: 4rem;
+  background-color: #d9534f;
+  color: white;
+  font-size: 1.4rem;
+  padding: 0.8rem 1.6rem;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  margin-top: auto;
+  width: 100%;
 }
 
 .action-button {
+  height: 5rem; 
   background-color: var(--color-primary);
   color: white;
   font-size: 1.6rem;
@@ -274,19 +288,6 @@ body {
   cursor: pointer;
   margin-top: auto;
   width: 100%;
-
-  /* --- FIX DIMENSIONI COSTANTI --- */
-  /* Impostiamo un'altezza fissa sufficiente per 2 righe di testo */
-  /* 5rem dovrebbe essere una buona misura basata sul tuo font-size */
-  height: 5rem; 
-
-  /* Usiamo flex per centrare il testo (sia che sia su 1 riga o su 2) */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1.1; /* Stringe leggermente lo spazio tra NEW e TILES */
-  /* ------------------------------- */
 }
 
 .action-button:hover {

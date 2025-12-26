@@ -1,6 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
-import PlaintextKey from "../keys/PlaintextKey"; 
-import Z408Key from "../keys/Z408Key";
+import React, { useState, useEffect } from "react";
 import Z340Key from "../keys/Z340Key";
 import { Tile } from "../types";
 
