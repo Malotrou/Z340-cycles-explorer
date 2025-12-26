@@ -1,283 +1,366 @@
-import { useState, useRef, useLayoutEffect, useEffect, useCallback } from "react";
+import { useState, useRef, useLayoutEffect, useEffect, useMemo } from "react";
 import "./style.css";
 import { Tile } from "./types";
 import { getCssVarRemFrom, getRemValueInPx } from "./utils/ghostImage";
-import useHistory from "./utils/useHistory";
+import Z340Untransposed from "./texts/Z340untransposed";
 
 // Import Componenti
 import LeftSidebar from "./components/LeftSidebar";
 import RightSidebar from "./components/RightSidebar";
 import Board from "./components/Board";
 
+// Definizione di un carattere "ricco"
+type RichChar = {
+  char: string;
+  color?: string;
+  backgroundColor?: string;
+};
+
+// Configurazione Griglia Visuale
+export type GridCell = {
+  id: number;          
+  row: number;         
+  col: number;         
+  char: string;        
+  baseColor: string;   
+  styleColor?: string; 
+  styleBg?: string;    
+  originalIndex: number | null; 
+};
+
 export default function App() {
   
-  // ─── STATO TEMA ───
-  const [currentTheme, setCurrentTheme] = useState<'default' | 'alt' | 'third'>('default');
+  // ─── CONFIGURAZIONE DIMENSIONI ───
+  const [numCols, setNumCols] = useState(17);
+  const [numRows, setNumRows] = useState(9);
+  
+  // ─── STATO TESTO E STILI ───
+  const [richText, setRichText] = useState<RichChar[]>([]);
+  const [inputText, setInputText] = useState("");
 
-  // ─── NUOVO: STATO ZOOM (Spostato qui dalla Board) ───
+  // ─── STATI MODALITÀ (Fix 0: parte da null) ───
+  const [exploreMode, setExploreMode] = useState<'untranspose' | 'transpose' | null>(null);
+  const [currentTheme, setCurrentTheme] = useState<'default' | 'alt' | 'third'>('default');
   const [zoomLevel, setZoomLevel] = useState(1.0);
   
-  // ─── STATI DI CONFIGURAZIONE ───
-  const [selectedNumber, setSelectedNumber] = useState(17);
-  const [inputText, setInputText] = useState("");
-  // NUOVO STATO: Gestione spazi
-  const [spacesMode, setSpacesMode] = useState<'keep' | 'remove'>('keep');
-  
-  // ─── GESTIONE STATO TILES (CON UNDO/REDO) ───
-  const { 
-    state: tiles, 
-    setState: setTiles, 
-    undo, 
-    redo, 
-    canUndo, 
-    canRedo,
-    resetHistory
-  } = useHistory<Tile[]>([], 15);
-  
-  const [selectedTileIds, setSelectedTileIds] = useState<number[]>([]);
-  
-  // ─── STATI FONT E CIFRARIO ───
-  const [cipherType, setCipherType] = useState<string>("Custom");
-  const [uiFont, setUiFont] = useState("Arial");
-  const [boardFont, setBoardFont] = useState("Arial");
-  const [selectedKeyName, setSelectedKeyName] = useState<"Plaintext" | "Z408" | "Z340">("Plaintext");
-
-  // ─── STATI UI ───
-  const [isAddMode, setIsAddMode] = useState(false);
-  const [isCopyMode, setIsCopyMode] = useState(false);
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
-  
+  // ─── SELEZIONE ───
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]); 
+  const [activeSidebarKeys, setActiveSidebarKeys] = useState<string[]>([]);
   const boardRef = useRef<HTMLDivElement>(null);
-  const [needsScrollReset, setNeedsScrollReset] = useState(false);
-  
-  const prevThemeRef = useRef(currentTheme);
 
-  // ─── EASTER EGG STATE ───
-  const eggCountRef = useRef(0); 
-  const eggTimerRef = useRef<number | null>(null);
-
-  // ─── CALCOLO DIMENSIONI GRIGLIA ───
-  const margin = 40;
-  const maxTileCol = tiles.length > 0 ? Math.max(...tiles.map(t => t.col)) : 0;
-  const maxTileRow = tiles.length > 0 ? Math.max(...tiles.map(t => t.row)) : 0;
-  const minGridCols = selectedNumber + 2 * margin;
-  const minGridRows = Math.ceil(tiles.length / selectedNumber) + 2 * margin;
-  const totalColumns = Math.max(minGridCols, maxTileCol + margin);
-  const totalRows = Math.max(minGridRows, maxTileRow + margin);
-
-  // ─── LOGICHE APPLICAZIONE ───
-
-const createTiles = () => {
-    // 1. Pulizia testo
-    let cleanText = inputText.replace(/[\n\r]+/g, "");
-    if (spacesMode === 'remove') {
-        cleanText = cleanText.replace(/ /g, "");
-    }
-
-    // 2. Creazione Tiles
-    const chars = cleanText.split("");
-    const newTiles: Tile[] = [];
-
-    chars.forEach((c, idx) => {
-      if (c === " ") return;
-      newTiles.push({
-        id: idx,
-        char: c,
-        col: (idx % selectedNumber) + 1 + margin,
-        row: Math.floor(idx / selectedNumber) + 1 + margin,
-      });
-    });
-    
-    // 3. Reset Stati
-    resetHistory(newTiles);
-    setBoardFont(uiFont);
-    
-    // 4. Gestione Key Name
-    if (uiFont === "Z408" || uiFont === "Largo") {
-      setSelectedKeyName("Z408");
-    } else if (uiFont === "Z340") {
-      setSelectedKeyName("Z340");
-    } else {
-      setSelectedKeyName("Plaintext");
-    }
-    
-    // 5. TRIGGER DI RESET
-    setNeedsScrollReset(true); // Attiva il centraggio
-    setZoomLevel(1.0);         // <--- FORZA LO ZOOM AL 100%
-  };
-
-  const deleteSelectedTiles = useCallback(() => {
-    if (selectedTileIds.length === 0) return;
-    setTiles(prev => prev.filter(t => !selectedTileIds.includes(t.id)));
-    setSelectedTileIds([]);
-    setIsCopyMode(false); 
-  }, [selectedTileIds, setTiles]);
-
-  const handleUploadLoaded = (loadedTiles: Tile[], loadedFont: string) => {
-    resetHistory(loadedTiles);
-    setUiFont(loadedFont);
-    setBoardFont(loadedFont);
-    setNeedsScrollReset(true);
-  };
-
-  const handleEasterEggClick = () => {
-    if (eggTimerRef.current) {
-      clearTimeout(eggTimerRef.current);
-    }
-    eggCountRef.current += 1;
-    
-    if (eggCountRef.current === 5) {
-      const link = document.createElement('a');
-      link.href = "https://github.com/Malotrou/Zodiac_word_puzzle/archive/refs/heads/main.zip";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      eggCountRef.current = 0;
-      return;
-    }
-    eggTimerRef.current = window.setTimeout(() => {
-      eggCountRef.current = 0;
-    }, 1000);
-  };
-
-  // ─── EFFETTI ───
+  // ─── INIZIALIZZAZIONE ───
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+    // Caricamento iniziale testo pulito (Fix 2: no newlines)
+    const raw = Z340Untransposed || "";
+    const clean = raw.replace(/[\n\r]+/g, "");
+    
+    const initialRich: RichChar[] = clean.split("").map(c => ({ char: c }));
+    setRichText(initialRich);
+    setInputText(clean);
+  }, []);
+
+  // ─── GESTIONE INPUT TEXTAREA (Fix 5: Diffing Algorithm) ───
+  const handleTextChange = (rawText: string) => {
+    // Fix 2: Rimuoviamo subito i ritorni a capo dall'input
+    const newText = rawText.replace(/[\n\r]+/g, "");
+    
+    // Se il testo non è cambiato (es. solo enter premuto e rimosso), non fare nulla
+    if (newText === inputText) return;
+
+    // Algoritmo di Diffing per preservare gli stili "sul carattere"
+    // 1. Troviamo il prefisso comune
+    let prefixLen = 0;
+    while (prefixLen < inputText.length && prefixLen < newText.length && inputText[prefixLen] === newText[prefixLen]) {
+      prefixLen++;
+    }
+
+    // 2. Troviamo il suffisso comune
+    let suffixLen = 0;
+    while (
+      suffixLen < (inputText.length - prefixLen) && 
+      suffixLen < (newText.length - prefixLen) && 
+      inputText[inputText.length - 1 - suffixLen] === newText[newText.length - 1 - suffixLen]
+    ) {
+      suffixLen++;
+    }
+
+    // 3. Costruiamo il nuovo array RichChar
+    const newRichText: RichChar[] = [];
+
+    // A. Copia parte immutata iniziale
+    for (let i = 0; i < prefixLen; i++) {
+      newRichText.push(richText[i]);
+    }
+
+    // B. Aggiungi i nuovi caratteri (inseriti dall'utente)
+    //    Questi prendono stile di default (nessuno)
+    const insertedCount = newText.length - (prefixLen + suffixLen);
+    for (let i = 0; i < insertedCount; i++) {
+      newRichText.push({ char: newText[prefixLen + i] });
+    }
+
+    // C. Copia parte immutata finale (traslando gli indici dallo stato vecchio)
+    //    I caratteri cancellati vengono saltati automaticamente perché non li copiamo
+    const oldSuffixStart = inputText.length - suffixLen;
+    for (let i = 0; i < suffixLen; i++) {
+      newRichText.push(richText[oldSuffixStart + i]);
+    }
+
+    setInputText(newText);
+    setRichText(newRichText);
+  };
+
+  // ─── LOGICA DI COLORAZIONE ───
+  const applyStyleToSelection = (color: string, type: 'text' | 'bg') => {
+    if (selectedIndices.length === 0) return;
+    
+    setRichText(prev => prev.map((item, idx) => {
+      if (selectedIndices.includes(idx)) {
+        return {
+          ...item,
+          [type === 'text' ? 'color' : 'backgroundColor']: color
+        };
+      }
+      return item;
+    }));
+  };
+
+  // ─── CALCOLO MATRICE DEI TILES ───
+  const gridCells = useMemo(() => {
+    const cells: GridCell[] = [];
+    
+    // Fix 0: Se nessuna modalità è selezionata, griglia vuota
+    if (exploreMode === null) return [];
+
+    const blockCapacity = numRows * numCols; 
+    
+    // Dimensioni VISIVE
+    let visualBlockCols = 0;
+    let visualBlockRows = 0;
+
+    if (exploreMode === 'untranspose') {
+      visualBlockCols = numRows; 
+      visualBlockRows = numCols; 
+    } else {
+      visualBlockCols = numCols;
+      visualBlockRows = numRows;
+    }
+
+    const totalChars = richText.length;
+    // Mappa: GridIndex -> TextIndex
+    const positionMap = new Map<number, number>();
+
+    // ─── MAPPA POSIZIONI ───
+    
+    if (exploreMode === 'untranspose') {
+      // Lineare semplice per tutto
+      for (let i = 0; i < totalChars; i++) {
+        positionMap.set(i, i);
+      }
+    } else {
+      // TRANSPOSE (Ciclica sui blocchi, Lineare sul residuo)
       
-      if (e.key === "Delete" || e.key === "Backspace") {
-        deleteSelectedTiles();
+      let currentR = 1; 
+      let currentC = 1; 
+      
+      for (let i = 0; i < totalChars; i++) {
+        const blockIndex = Math.floor(i / blockCapacity);
+        
+        // Fix 3: Il terzo blocco (residuo) e successivi non usano la trasposizione, ma sono lineari
+        if (blockIndex >= 2) {
+          // Calcoliamo la posizione assoluta lineare a partire dall'inizio del terzo blocco
+          // La posizione grid deve essere consequenziale all'ultimo tile del blocco 2
+          const absoluteGridPos = i; 
+          positionMap.set(absoluteGridPos, i);
+          continue;
+        }
+
+        // Logica Trasposizione (Solo blocchi 0 e 1)
+        const charInBlockIndex = i % blockCapacity;
+        
+        if (charInBlockIndex === 0) {
+          currentR = 1;
+          currentC = 1;
+        } else {
+          // Regola: riga+1, col+2
+          currentR = currentR + 1;
+          if (currentR > numRows) currentR = (currentR - numRows); // Wrap residuo
+
+          currentC = currentC + 2;
+          if (currentC > numCols) currentC = (currentC - numCols); // Wrap residuo
+        }
+
+        const linearPosInBlock = (currentR - 1) * numCols + (currentC - 1);
+        const absoluteGridPos = (blockIndex * blockCapacity) + linearPosInBlock;
+        positionMap.set(absoluteGridPos, i);
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        undo();
+    }
+
+    // ─── CREAZIONE CELLE VISIVE ───
+    
+    let currentGridRow = 1;
+    
+    // BLOCCO 1
+    for (let r = 1; r <= visualBlockRows; r++) {
+      for (let c = 1; c <= visualBlockCols; c++) {
+        const linearIdx = (r - 1) * visualBlockCols + (c - 1);
+        cells.push(createCell(linearIdx, r, c, visualBlockCols, visualBlockRows, positionMap));
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault();
-        redo();
+    }
+    currentGridRow += visualBlockRows + 1; // Spacer
+
+    // BLOCCO 2
+    for (let r = 1; r <= visualBlockRows; r++) {
+      for (let c = 1; c <= visualBlockCols; c++) {
+        const linearIdx = blockCapacity + (r - 1) * visualBlockCols + (c - 1);
+        cells.push(createCell(linearIdx, currentGridRow + r - 1, c, visualBlockCols, visualBlockRows, positionMap));
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        e.preventDefault();
-        if (selectedTileIds.length > 0) {
-          setIsCopyMode(true);
-          setIsAddMode(false); 
+    }
+    currentGridRow += visualBlockRows + 1; // Spacer
+
+    // BLOCCO RESIDUO (Se c'è testo)
+    const remainingCharsStart = blockCapacity * 2;
+    if (totalChars > remainingCharsStart) {
+      const remainingCount = totalChars - remainingCharsStart;
+      const residRows = Math.ceil(remainingCount / visualBlockCols);
+      
+      for (let r = 1; r <= residRows; r++) {
+        for (let c = 1; c <= visualBlockCols; c++) {
+          const linearIdx = remainingCharsStart + (r - 1) * visualBlockCols + (c - 1);
+          if (linearIdx < totalChars) {
+             cells.push(createCell(linearIdx, currentGridRow + r - 1, c, visualBlockCols, visualBlockRows, positionMap));
+          }
         }
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [deleteSelectedTiles, undo, redo, selectedTileIds, setIsAddMode]);
-
-  useLayoutEffect(() => {
-    const themeChanged = prevThemeRef.current !== currentTheme;
+    }
     
-    // FIX: Aggiunta condizione "o se lo zoom è cambiato" non strettamente necessaria per la logica 
-    // ma utile per coerenza, qui ci basiamo su needsScrollReset che è true quando clicchi CREATE.
-    if ((needsScrollReset || themeChanged) && boardRef.current && tiles.length > 0) {
-      const board = boardRef.current;
-      
-      prevThemeRef.current = currentTheme;
+    return cells;
 
-      const rootFontSize = getRemValueInPx();
-      
-      const baseH = getCssVarRemFrom(document.documentElement, "--base-cell-height", "3.5");
-      const gapRem = getCssVarRemFrom(board, "--gap-size", "0.2");
-      
-      // FIX: Moltiplichiamo per zoomLevel. 
-      // Anche se cliccando CREATE è 1.0, questo garantisce che il calcolo sia 
-      // sincronizzato con lo stato attuale renderizzato.
-      const cellSizePx = baseH * zoomLevel * rootFontSize;
-      const gapPx = gapRem * rootFontSize; // Il gap spesso non scala col zoom, ma dipende dal tuo CSS. Se scala, va moltiplicato.
-      const totalRowHeight = cellSizePx + gapPx;
+  }, [numCols, numRows, richText, exploreMode]);
 
-      // CALCOLO ORIZZONTALE
-      board.scrollLeft = (board.scrollWidth - board.clientWidth) / 2;
+  function createCell(
+    gridIndex: number, 
+    cssRow: number, 
+    cssCol: number, 
+    vCols: number, 
+    vRows: number, 
+    posMap: Map<number, number>
+  ): GridCell {
+    
+    const textIndex = posMap.get(gridIndex);
+    const richChar = textIndex !== undefined ? richText[textIndex] : null;
 
-      // CALCOLO VERTICALE
-      const rowsToScrollPast = Math.max(0, margin - 1);
-      const targetScrollTop = rowsToScrollPast * totalRowHeight;
-
-      board.scrollTop = targetScrollTop;
-      
-      if (needsScrollReset) {
-        setNeedsScrollReset(false);
+    let baseColor = "var(--bg-color-board-tiles)"; 
+    
+    // Colore Base Grigio (Solo Untranspose)
+    if (exploreMode === 'untranspose') {
+      const isBlock1Or2 = gridIndex < (vCols * vRows * 2);
+      if (isBlock1Or2) {
+        const indexInBlock = gridIndex % (vCols * vRows);
+        const relCol = (indexInBlock % vCols) + 1; // Colonna visiva interna
+        const relRow = Math.floor(indexInBlock / vCols) + 1;
+        
+        // Logica "triangolare"
+        if (relCol === 1) {
+          baseColor = "#d3d3d3";
+        } else if (relCol >= 3) {
+          const grayCount = 2 * (relCol - 2);
+          if (relRow > (vRows - grayCount)) {
+            baseColor = "#d3d3d3";
+          }
+        }
       }
     }
-  // FIX: Aggiunto zoomLevel alle dipendenze qui sotto!
-  }, [tiles, needsScrollReset, margin, currentTheme, zoomLevel]);
 
-  // ─── RENDER ───
+    return {
+      id: gridIndex,
+      row: cssRow,
+      col: cssCol,
+      char: richChar?.char || "",
+      baseColor: baseColor,
+      styleColor: richChar?.color,
+      styleBg: richChar?.backgroundColor,
+      originalIndex: textIndex ?? null
+    };
+  }
+
+  // ─── UTILS UI ───
+  // Gestione click singolo o CTRL+click
+  const handleTileClick = (textIndex: number | null, ctrlKey: boolean) => {
+    if (textIndex === null) {
+      if (!ctrlKey) setSelectedIndices([]);
+      return;
+    }
+    if (ctrlKey) {
+      setSelectedIndices(prev => 
+        prev.includes(textIndex) ? prev.filter(i => i !== textIndex) : [...prev, textIndex]
+      );
+    } else {
+      setSelectedIndices([textIndex]);
+    }
+  };
+
+  // Gestione selezione rettangolare (Callback dalla Board)
+  const handleRectSelection = (indices: number[], isAdditive: boolean) => {
+    if (isAdditive) {
+      // Uniamo senza duplicati
+      setSelectedIndices(prev => Array.from(new Set([...prev, ...indices])));
+    } else {
+      setSelectedIndices(indices);
+    }
+  };
+
   return (
     <div className="container">
       <LeftSidebar
-        collapsed={leftCollapsed}
-        onToggle={() => setLeftCollapsed(!leftCollapsed)}
         inputText={inputText}
-        setInputText={setInputText}
-        cipherType={cipherType}
-        setCipherType={setCipherType}
-        uiFont={uiFont}
-        setUiFont={setUiFont}
-        selectedNumber={selectedNumber}
-        setSelectedNumber={setSelectedNumber}
-        onCreateTiles={createTiles}
-        // NUOVE PROPS
-        spacesMode={spacesMode}
-        setSpacesMode={setSpacesMode}
+        setInputText={handleTextChange}
+        numCols={numCols}
+        setNumCols={setNumCols}
+        numRows={numRows}
+        setNumRows={setNumRows}
+        exploreMode={exploreMode}
+        setExploreMode={setExploreMode}
       />
 
       <div className="center-section">
-        <h1 className="full-width">
-          <img
-            src="/concerned_citizen_quote_red.jpg"
-            alt="Zodiac Quote"
-            className="quote-image"
-            onClick={handleEasterEggClick}
-            style={{ cursor: "default" }}
-          />
+        <h1 className="full-width" style={{textAlign: "center", marginBottom: "1rem"}}>
+           Explore Z340’s homophonic cycles
         </h1>
         
         <Board
           boardRef={boardRef}
-          tiles={tiles}
-          setTiles={setTiles}
-          selectedTileIds={selectedTileIds}
-          setSelectedTileIds={setSelectedTileIds}
-          boardFont={boardFont}
-          totalColumns={totalColumns}
-          totalRows={totalRows}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUploadLoaded={handleUploadLoaded}
-          currentTheme={currentTheme}
-          setCurrentTheme={setCurrentTheme}
-          isCopyMode={isCopyMode}
-          setIsCopyMode={setIsCopyMode}
+          gridCells={gridCells}
+          selectedIndices={selectedIndices}
+          onTileClick={handleTileClick}
+          onRectSelection={handleRectSelection}
           zoomLevel={zoomLevel}
           setZoomLevel={setZoomLevel}
+          currentTheme={currentTheme}
+          setCurrentTheme={setCurrentTheme}
+          totalVisualCols={exploreMode === 'untranspose' ? numRows : numCols}
+          setActiveSidebarKeys={setActiveSidebarKeys}
         />
       </div>
 
       <RightSidebar
-        collapsed={rightCollapsed}
-        onToggle={() => setRightCollapsed(!rightCollapsed)}
-        tiles={tiles}
-        setTiles={setTiles}
-        selectedTileIds={selectedTileIds}
-        setSelectedTileIds={setSelectedTileIds}
-        selectedKeyName={selectedKeyName}
-        setSelectedKeyName={setSelectedKeyName}
-        onDeleteTiles={deleteSelectedTiles}
-        isAddMode={isAddMode}
-        setIsAddMode={setIsAddMode}
-        boardFont={boardFont}
+        tiles={richText.map((rc, i) => ({ id: i, char: rc.char, col: 0, row: 0, color: rc.color, backgroundColor: rc.backgroundColor }))}
+        setTiles={() => {}} 
+        selectedTileIds={selectedIndices}
+        setSelectedTileIds={setSelectedIndices} 
+        activeSidebarKeys={activeSidebarKeys}
+        setActiveSidebarKeys={setActiveSidebarKeys}
+        customApplyColor={applyStyleToSelection}
         currentTheme={currentTheme}
-        isCopyMode={isCopyMode}
-        setIsCopyMode={setIsCopyMode}
+        // Props dummy per compatibilità
+        selectedKeyName={"Z340"}
+        setSelectedKeyName={() => {}}
+        onDeleteTiles={() => {}}
+        isAddMode={false}
+        setIsAddMode={() => {}}
+        boardFont={"Z340"}
+        isCopyMode={false}
+        setIsCopyMode={() => {}}
       />
     </div>
   );
