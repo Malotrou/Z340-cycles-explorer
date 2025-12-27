@@ -3,7 +3,7 @@ import "./style.css";
 import { Tile } from "./types";
 import Z340Untransposed from "./texts/Z340untransposed";
 import useHistory from "./utils/useHistory";
-import { handleSnag, handleSave, handleUpload } from "./utils/fileHandlers";
+import { handleSnag, handleSave, /*handleUpload*/ } from "./utils/fileHandlers";
 
 // Import Componenti
 import LeftSidebar from "./components/LeftSidebar";
