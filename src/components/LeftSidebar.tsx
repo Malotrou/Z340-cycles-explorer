@@ -19,7 +19,7 @@ export default function LeftSidebar({
   setNumCols,
   numRows,
   setNumRows,
-  exploreMode,
+ // exploreMode,
   setExploreMode,
   repoText,
   setRepoText,
