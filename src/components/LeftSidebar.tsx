@@ -19,15 +19,15 @@ export default function LeftSidebar({
   setNumCols,
   numRows,
   setNumRows,
- // exploreMode,
+  exploreMode,
   setExploreMode,
   repoText,
   setRepoText,
   onReset
 }: LeftSidebarProps) {
   
-  const colOptions = Array.from({ length: 8 }, (_, i) => 13 + i); 
-  const rowOptions = Array.from({ length: 7 }, (_, i) => 7 + i);  
+  const colOptions = Array.from({ length: 14 }, (_, i) => 7 + i); 
+  const rowOptions = Array.from({ length: 14 }, (_, i) => 7 + i);  
 
   return (
     <div className="sidebar-section">
@@ -100,11 +100,17 @@ export default function LeftSidebar({
             </button>
         </div>
 
-        {/* Action Buttons */}
+{/* Action Buttons */}
         <div className="flex-column gap-medium mt-auto full-width">
             <button 
                 className="action-button"
                 onClick={() => setExploreMode('transpose')}
+                style={{
+                    // Qui usiamo exploreMode, risolvendo l'errore TypeScript
+                    backgroundColor: exploreMode === 'transpose' ? "var(--color-primary)" : "#ccc",
+                    cursor: exploreMode === 'transpose' ? "default" : "pointer",
+                    // Opzionale: aggiungi bordo o altro stile per evidenziare
+                }}
             >
                 GENERATE TRANSPOSED
             </button>
@@ -112,6 +118,11 @@ export default function LeftSidebar({
             <button 
                 className="action-button"
                 onClick={() => setExploreMode('untranspose')}
+                style={{
+                    // Qui usiamo exploreMode, risolvendo l'errore TypeScript
+                    backgroundColor: exploreMode === 'untranspose' ? "var(--color-primary)" : "#ccc",
+                    cursor: exploreMode === 'untranspose' ? "default" : "pointer",
+                }}
             >
                 GENERATE UNTRANSPOSED
             </button>
